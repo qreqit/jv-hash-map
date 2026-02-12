@@ -4,44 +4,39 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
     private static final float DEFAULT_LOAD_FACTOR = 0.75F;
     private static final int MULTIPLIER_TABLE_GROW = 2;
-    private static final int ZERO = 0;
     private Node<K, V>[] table;
     private int size;
     private int acutalcapacity = DEFAULT_INITIAL_CAPACITY;
     private int threshold = (int) (acutalcapacity * DEFAULT_LOAD_FACTOR);
 
     public MyHashMap() {
+        table = new Node[DEFAULT_INITIAL_CAPACITY];
     }
 
     @Override
     public void put(K key, V value) {
-        if (table == null) {
-            acutalcapacity = DEFAULT_INITIAL_CAPACITY;
-            table = new Node[DEFAULT_INITIAL_CAPACITY];
-            table[calculateIndex(key)] = new Node<>(key, value, calculateHash(key), null);
+        checkResize();
+        int index = calculateIndex(key);
+        Node<K, V> currentNode = table[index];
+
+        if (currentNode == null) {
+            currentNode = new Node<>(key, value, calculateHash(key), null);
+            table[index] = currentNode;
             size++;
         } else {
-            checkResize();
-            int index = calculateIndex(key);
-            Node<K,V> currentNode = table[index];
-
-            if (currentNode == null) {
-                currentNode = new Node<>(key, value, calculateHash(key), null);
-                table[index] = currentNode;
-                size++;
-            } else {
-                while (currentNode != null) {
-                    if (isKeyValid(key, currentNode)) {
-                        currentNode.value = value;
-                        return;
-                    }
-                    if (currentNode.next == null) {
-                        currentNode.next = new Node<K, V>(key, value, calculateHash(key), null);
-                        size++;
-                        return;
-                    }
-                    currentNode = currentNode.next;
+            while (currentNode != null) {
+                if (isKeyValid(key, currentNode)) {
+                    currentNode.value = value;
+                    return;
                 }
+                if (currentNode.next == null) {
+                    currentNode.next = new Node<K, V>(
+                            key, value, calculateHash(key), null
+                    );
+                    size++;
+                    return;
+                }
+                currentNode = currentNode.next;
             }
         }
     }
@@ -88,7 +83,7 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
             threshold = (int) (acutalcapacity * DEFAULT_LOAD_FACTOR);
             Node<K, V>[] old = table;
             table = new Node[acutalcapacity];
-            size = ZERO;
+            size = 0;
             for (Node<K, V> node : old) {
                 while (node != null) {
 
@@ -100,18 +95,14 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
     }
 
     private boolean isKeyValid(K key, Node<K, V> node) {
-        if (node.key == null && key == null) {
+        if (node.key == key || (node.key != null && node.key.equals(key))) {
             return true;
         }
-        if (node.key == null || key == null) {
-            return false;
-        }
-        return key.equals(node.key);
+        return false;
     }
 
     private static class Node<K, V> {
         private final K key;
-        private final int hash;
         private V value;
         private Node<K, V> next;
 
@@ -119,7 +110,6 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
             this.value = value;
             this.next = next;
             this.key = key;
-            this.hash = hash;
         }
     }
 }
