@@ -6,8 +6,8 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
     private static final int MULTIPLIER_TABLE_GROW = 2;
     private Node<K, V>[] table;
     private int size;
-    private int acutalcapacity = DEFAULT_INITIAL_CAPACITY;
-    private int threshold = (int) (acutalcapacity * DEFAULT_LOAD_FACTOR);
+    private int actualCapacity = DEFAULT_INITIAL_CAPACITY;
+    private int threshold = (int) (actualCapacity * DEFAULT_LOAD_FACTOR);
 
     public MyHashMap() {
         table = new Node[DEFAULT_INITIAL_CAPACITY];
@@ -20,7 +20,7 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
         Node<K, V> currentNode = table[index];
 
         if (currentNode == null) {
-            currentNode = new Node<>(key, value, calculateHash(key), null);
+            currentNode = new Node<>(key, value, null);
             table[index] = currentNode;
             size++;
         } else {
@@ -31,7 +31,7 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
                 }
                 if (currentNode.next == null) {
                     currentNode.next = new Node<K, V>(
-                            key, value, calculateHash(key), null
+                            key, value,null
                     );
                     size++;
                     return;
@@ -43,10 +43,6 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
 
     @Override
     public V getValue(K key) {
-        if (table == null) {
-            return null;
-        }
-
         Node<K,V> currentNode = table[calculateIndex(key)];
         while (currentNode != null) {
             if (isKeyValid(key, currentNode)) {
@@ -67,7 +63,7 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
             return 0;
         }
         int hash = calculateHash(key);
-        return hash & (acutalcapacity - 1);
+        return hash & (actualCapacity - 1);
     }
 
     private int calculateHash(K key) {
@@ -79,26 +75,24 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
 
     private void checkResize() {
         if (size >= threshold) {
-            acutalcapacity *= MULTIPLIER_TABLE_GROW;
-            threshold = (int) (acutalcapacity * DEFAULT_LOAD_FACTOR);
+            actualCapacity *= MULTIPLIER_TABLE_GROW;
+            threshold = (int) (actualCapacity * DEFAULT_LOAD_FACTOR);
             Node<K, V>[] old = table;
-            table = new Node[acutalcapacity];
-            size = 0;
+            table = new Node[actualCapacity];
             for (Node<K, V> node : old) {
                 while (node != null) {
-
-                    put(node.key, node.value);
-                    node = node.next;
+                    Node<K, V> nextNode = node.next;
+                    int newIndex = calculateIndex(node.key);
+                    node.next = table[newIndex];
+                    table[newIndex] = node;
+                    node = nextNode;
                 }
             }
         }
     }
 
     private boolean isKeyValid(K key, Node<K, V> node) {
-        if (node.key == key || (node.key != null && node.key.equals(key))) {
-            return true;
-        }
-        return false;
+        return (node.key == key || (node.key != null && node.key.equals(key)));
     }
 
     private static class Node<K, V> {
@@ -106,7 +100,7 @@ public class MyHashMap<K, V> implements MyMap<K, V> {
         private V value;
         private Node<K, V> next;
 
-        public Node(K key, V value, int hash, Node<K, V> next) {
+        public Node(K key, V value, Node<K, V> next) {
             this.value = value;
             this.next = next;
             this.key = key;
